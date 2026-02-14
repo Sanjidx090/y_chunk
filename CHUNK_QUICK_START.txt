@@ -1,0 +1,303 @@
+═══════════════════════════════════════════════════════════════════════
+CHUNK-WISE TRANSCRIPT DOWNLOAD - QUICK START GUIDE
+From 275 Bangla Videos → Time-Chunked Transcripts Ready for Processing
+═══════════════════════════════════════════════════════════════════════
+
+WHAT YOU'LL GET
+---------------
+For each of your 275 Bangla videos:
+✅ Transcripts split into time-based chunks
+✅ JSON files with timestamps (for processing)
+✅ Plain text files (for training)
+✅ Metadata (duration, chunk count, etc.)
+
+Perfect for: VAD alignment, speech training, ML datasets
+
+═══════════════════════════════════════════════════════════════════════
+3-STEP PROCESS
+═══════════════════════════════════════════════════════════════════════
+
+┌─ STEP 1: PREPARE BATCHES (2 minutes) ────────────────────────────┐
+│                                                                    │
+│  You already have: videos_with_bangla.csv (275 videos)           │
+│                                                                    │
+│  Run:                                                              │
+│  python prepare_bangla_batches.py                                 │
+│                                                                    │
+│  Creates 6 batch files:                                           │
+│  ├── bangla_batch_0.csv (50 videos)                              │
+│  ├── bangla_batch_1.csv (50 videos)                              │
+│  ├── bangla_batch_2.csv (50 videos)                              │
+│  ├── bangla_batch_3.csv (50 videos)                              │
+│  ├── bangla_batch_4.csv (50 videos)                              │
+│  └── bangla_batch_5.csv (25 videos)                              │
+│                                                                    │
+│  ⏱️ Time: 10 seconds                                              │
+│                                                                    │
+└───────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 2: DOWNLOAD IN PARALLEL (1-2 hours) ───────────────────────┐
+│                                                                    │
+│  Upload to each platform and run chunk_downloader.py:            │
+│                                                                    │
+│  🔷 Kaggle 1     → bangla_batch_0.csv → batch_0_transcripts/     │
+│  🔶 Colab 1      → bangla_batch_1.csv → batch_1_transcripts/     │
+│  🔷 GitHub       → bangla_batch_2.csv → batch_2_transcripts/     │
+│  🔶 Colab 2      → bangla_batch_3.csv → batch_3_transcripts/     │
+│  🔷 Kaggle 2     → bangla_batch_4.csv → batch_4_transcripts/     │
+│  🔶 Any platform → bangla_batch_5.csv → batch_5_transcripts/     │
+│                                                                    │
+│  Each platform runs independently = NO rate limit conflicts!     │
+│                                                                    │
+│  Configure chunk_downloader.py for each:                          │
+│  • INPUT_CSV = "bangla_batch_X.csv"                              │
+│  • OUTPUT_DIR = "batch_X_transcripts"                            │
+│  • CHUNK_MODE = "fixed"  # Choose your mode!                     │
+│  • CHUNK_DURATION = 30   # For fixed mode                        │
+│                                                                    │
+│  ⏱️ Time per batch: 30-45 minutes                                │
+│  ⏱️ All 6 parallel: 1-2 hours total                              │
+│                                                                    │
+└───────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 3: MERGE RESULTS (2 minutes) ──────────────────────────────┐
+│                                                                    │
+│  Download all batch_X_transcripts/ folders                       │
+│  Put them all in one directory                                    │
+│                                                                    │
+│  Run:                                                              │
+│  python merge_transcript_batches.py                               │
+│                                                                    │
+│  Creates:                                                          │
+│  └── bangla_transcripts_merged/                                  │
+│      ├── index.json (quick lookup)                               │
+│      ├── VIDEO_ID_1/                                             │
+│      │   ├── metadata.json                                       │
+│      │   ├── chunk_0000.json                                     │
+│      │   ├── chunk_0000.txt                                      │
+│      │   └── ...                                                  │
+│      └── VIDEO_ID_2/                                             │
+│          └── ...                                                  │
+│                                                                    │
+│  Plus summary files:                                              │
+│  • transcript_download_summary.csv                               │
+│  • transcript_stats.json                                          │
+│                                                                    │
+│  ⏱️ Time: 1-2 minutes                                             │
+│                                                                    │
+└───────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+CHOOSING YOUR CHUNK MODE
+═══════════════════════════════════════════════════════════════════════
+
+Edit chunk_downloader.py and set CHUNK_MODE:
+
+┌──────────────────────────────────────────────────────────────────┐
+│ MODE: "full"                                                      │
+├──────────────────────────────────────────────────────────────────┤
+│ What: Entire transcript as 1 file per video                      │
+│ When: General analysis, reading, simple processing               │
+│ Output: 275 files (1 per video)                                  │
+│ Config: CHUNK_MODE = "full"                                      │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ MODE: "fixed" ⭐ RECOMMENDED FOR MOST USE CASES                  │
+├──────────────────────────────────────────────────────────────────┤
+│ What: Split into equal N-second chunks                           │
+│ When: Training models, batch processing, uniform segments        │
+│ Output: ~50-100 chunks per video (depends on duration)           │
+│ Config:                                                           │
+│   CHUNK_MODE = "fixed"                                           │
+│   CHUNK_DURATION = 30  # 30 seconds per chunk                    │
+│                                                                   │
+│ Recommendations:                                                  │
+│ • 10-15s: Short audio clips (speech recognition)                 │
+│ • 20-30s: Standard training segments                             │
+│ • 45-60s: Longer context windows                                 │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ MODE: "sentences"                                                 │
+├──────────────────────────────────────────────────────────────────┤
+│ What: Each subtitle segment becomes a chunk                      │
+│ When: Sentence-level analysis, fine-grained alignment            │
+│ Output: ~200-500 chunks per video                                │
+│ Config: CHUNK_MODE = "sentences"                                 │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ MODE: "custom"                                                    │
+├──────────────────────────────────────────────────────────────────┤
+│ What: Use your own time ranges (e.g., from VAD)                  │
+│ When: You have specific segments to extract                      │
+│ Output: Depends on your ranges                                   │
+│ Config:                                                           │
+│   CHUNK_MODE = "custom"                                          │
+│   CUSTOM_CHUNKS = {                                              │
+│     "video_id_1": [(0, 10), (15, 30)],                          │
+│     "video_id_2": [(5, 20), (25, 40)]                           │
+│   }                                                               │
+└──────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+PLATFORM-SPECIFIC SETUP
+═══════════════════════════════════════════════════════════════════════
+
+Kaggle:
+┌──────────────────────────────────────────────────────────────────┐
+│ 1. Create new notebook                                            │
+│ 2. Add dataset → Upload bangla_batch_0.csv                       │
+│ 3. Upload chunk_downloader.py as dataset or code file            │
+│ 4. Run: !python chunk_downloader.py                              │
+│ 5. Download batch_0_transcripts/ folder                          │
+└──────────────────────────────────────────────────────────────────┘
+
+Google Colab:
+┌──────────────────────────────────────────────────────────────────┐
+│ 1. New notebook                                                   │
+│ 2. Upload bangla_batch_1.csv and chunk_downloader.py             │
+│ 3. Run: !python chunk_downloader.py                              │
+│ 4. Download batch_1_transcripts/ using zip:                      │
+│    !zip -r batch_1_transcripts.zip batch_1_transcripts           │
+│    Download the zip file                                          │
+└──────────────────────────────────────────────────────────────────┘
+
+GitHub Codespaces:
+┌──────────────────────────────────────────────────────────────────┐
+│ 1. Create repo and start codespace                               │
+│ 2. Upload files                                                   │
+│ 3. Run: python chunk_downloader.py                               │
+│ 4. Download folder directly                                       │
+└──────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════
+OUTPUT FORMAT DETAILS
+═══════════════════════════════════════════════════════════════════════
+
+Example: Video nAkV9oOZaz0 with "fixed" mode (30s chunks)
+
+bangla_transcripts_merged/
+└── nAkV9oOZaz0/
+    ├── metadata.json           ← Video information
+    ├── chunk_0000.json         ← 0:00 - 0:30 (with timestamps)
+    ├── chunk_0000.txt          ← 0:00 - 0:30 (text only)
+    ├── chunk_0001.json         ← 0:30 - 1:00
+    ├── chunk_0001.txt          ← 0:30 - 1:00
+    ├── chunk_0002.json         ← 1:00 - 1:30
+    ├── chunk_0002.txt          ← 1:00 - 1:30
+    └── ...
+
+metadata.json:
+{
+  "video_id": "nAkV9oOZaz0",
+  "url": "https://www.youtube.com/watch?v=nAkV9oOZaz0",
+  "total_chunks": 12,
+  "chunk_mode": "fixed",
+  "total_duration": 357.8,
+  "total_segments": 245
+}
+
+chunk_0000.json:
+{
+  "chunk_id": 0,
+  "start": 0.0,
+  "end": 30.5,
+  "text": "আসসালামু আলাইকুম আজকে...",
+  "segments": 15
+}
+
+chunk_0000.txt:
+আসসালামু আলাইকুম আজকে...
+
+═══════════════════════════════════════════════════════════════════════
+USING THE TRANSCRIPTS
+═══════════════════════════════════════════════════════════════════════
+
+Python Example - Load a chunk:
+```python
+import json
+
+with open('bangla_transcripts_merged/nAkV9oOZaz0/chunk_0000.json') as f:
+    chunk = json.load(f)
+
+print(f"Text: {chunk['text']}")
+print(f"Time: {chunk['start']}s - {chunk['end']}s")
+```
+
+Get all text for training:
+```bash
+cat bangla_transcripts_merged/*/chunk_*.txt > all_bangla_training.txt
+```
+
+Count total chunks:
+```bash
+find bangla_transcripts_merged -name "chunk_*.json" | wc -l
+```
+
+Load all chunks for ML:
+```python
+import json
+from pathlib import Path
+
+transcripts = []
+for video_dir in Path('bangla_transcripts_merged').iterdir():
+    if video_dir.is_dir():
+        for chunk_file in sorted(video_dir.glob('chunk_*.json')):
+            with open(chunk_file) as f:
+                transcripts.append(json.load(f))
+
+print(f"Loaded {len(transcripts)} chunks")
+```
+
+═══════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════
+
+Problem: "Rate limited" after 20-30 videos
+Solution: Normal! The script saves progress. Wait 1-2 hours and re-run
+         with RESUME=True (default). It continues where it stopped.
+
+Problem: Some videos fail to download
+Solution: Check transcript_download_summary.csv for success/fail status.
+         Failed videos can be retried individually later.
+
+Problem: Running out of storage
+Solution: Process in smaller batches. Set BATCH_SIZE = 25 instead of 50.
+
+Problem: Takes too long
+Solution: Use "full" mode instead of "sentences" mode. Fewer files = faster.
+
+═══════════════════════════════════════════════════════════════════════
+EXPECTED RESULTS
+═══════════════════════════════════════════════════════════════════════
+
+For 275 Bangla videos:
+
+Storage needed:
+• full mode: ~50-100 MB
+• fixed mode (30s): ~100-200 MB
+• sentences mode: ~150-300 MB
+
+File counts:
+• full mode: 275 files
+• fixed mode: ~5,000-10,000 files
+• sentences mode: ~50,000-100,000 files
+
+Time to download:
+• Parallel (6 platforms): 1-2 hours
+• Sequential: 3-4 hours spread over 2 days
+
+═══════════════════════════════════════════════════════════════════════
+READY TO START?
+═══════════════════════════════════════════════════════════════════════
+
+1. ✅ You have: videos_with_bangla.csv (275 videos)
+2. ✅ Run: python prepare_bangla_batches.py
+3. ✅ Upload batches to platforms
+4. ✅ Configure and run chunk_downloader.py on each
+5. ✅ Merge with merge_transcript_batches.py
+6. 🎉 Done! Start building your models!
+
+═══════════════════════════════════════════════════════════════════════

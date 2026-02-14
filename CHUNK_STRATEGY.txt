@@ -1,0 +1,249 @@
+════════════════════════════════════════════════════════════════════════
+MULTI-PLATFORM STRATEGY FOR CHUNK-WISE TRANSCRIPT DOWNLOAD
+275 Bangla Videos → Time-Chunked Transcripts
+════════════════════════════════════════════════════════════════════════
+
+GOAL: Download and chunk transcripts for all 275 Bangla videos
+
+STRATEGY: Distribute across platforms to avoid rate limits
+
+════════════════════════════════════════════════════════════════════════
+PHASE 1: PREPARATION (5 minutes)
+════════════════════════════════════════════════════════════════════════
+
+1. Filter to Bangla-only videos:
+   
+   python prepare_bangla_batches.py
+   
+   This creates:
+   - bangla_batch_0.csv  (videos 0-49)   → Kaggle
+   - bangla_batch_1.csv  (videos 50-99)  → Colab
+   - bangla_batch_2.csv  (videos 100-149) → GitHub
+   - bangla_batch_3.csv  (videos 150-199) → Colab 2
+   - bangla_batch_4.csv  (videos 200-249) → Kaggle 2
+   - bangla_batch_5.csv  (videos 250-274) → Any platform
+
+2. Choose your chunking mode:
+   
+   MODE OPTIONS:
+   ┌──────────────────────────────────────────────────────────────┐
+   │ "full"      - Entire transcript as 1 file                    │
+   │              Best for: General use, reading, analysis        │
+   │              Output: 1 chunk per video                       │
+   ├──────────────────────────────────────────────────────────────┤
+   │ "fixed"     - Split into N-second chunks (e.g., 30s)        │
+   │              Best for: Training, uniform processing          │
+   │              Output: ~N chunks per minute of video           │
+   ├──────────────────────────────────────────────────────────────┤
+   │ "sentences" - Each subtitle segment = 1 chunk               │
+   │              Best for: Sentence-level analysis, alignment    │
+   │              Output: ~100-500 chunks per video               │
+   ├──────────────────────────────────────────────────────────────┤
+   │ "custom"    - Use your VAD time ranges                      │
+   │              Best for: VAD alignment, specific segments      │
+   │              Output: Depends on your VAD output              │
+   └──────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════
+PHASE 2: PARALLEL DOWNLOAD (1-2 hours)
+════════════════════════════════════════════════════════════════════════
+
+Run these simultaneously on different platforms:
+
+┌─────────────────────────────────────────────────────────────┐
+│ PLATFORM 1: KAGGLE                                          │
+├─────────────────────────────────────────────────────────────┤
+│ Batch: bangla_batch_0.csv (50 videos)                       │
+│ Config:                                                      │
+│   INPUT_CSV = "bangla_batch_0.csv"                          │
+│   OUTPUT_DIR = "batch_0_transcripts"                        │
+│   CHUNK_MODE = "fixed"  # or your choice                    │
+│   CHUNK_DURATION = 30   # for fixed mode                    │
+│   BATCH_SIZE = 50                                            │
+│                                                              │
+│ Run: python chunk_downloader.py                             │
+│ Time: ~30-45 minutes                                        │
+│ Download: Entire batch_0_transcripts/ folder                │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ PLATFORM 2: GOOGLE COLAB                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Batch: bangla_batch_1.csv (50 videos)                       │
+│ Same setup, change OUTPUT_DIR = "batch_1_transcripts"       │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ PLATFORM 3: GITHUB CODESPACES                               │
+├─────────────────────────────────────────────────────────────┤
+│ Batch: bangla_batch_2.csv (50 videos)                       │
+│ Same setup, change OUTPUT_DIR = "batch_2_transcripts"       │
+└─────────────────────────────────────────────────────────────┘
+
+Continue for all 6 batches...
+
+════════════════════════════════════════════════════════════════════════
+PHASE 3: MERGE TRANSCRIPTS (5 minutes)
+════════════════════════════════════════════════════════════════════════
+
+After downloading all batches:
+
+1. Download all transcript folders from each platform
+2. Organize them:
+   
+   bangla_transcripts/
+   ├── VIDEO_ID_1/
+   │   ├── metadata.json
+   │   ├── chunk_0000.json
+   │   ├── chunk_0000.txt
+   │   ├── chunk_0001.json
+   │   └── chunk_0001.txt
+   ├── VIDEO_ID_2/
+   └── ...
+
+3. Run merger:
+   
+   python merge_transcript_batches.py
+
+4. Creates organized structure + summary CSV
+
+════════════════════════════════════════════════════════════════════════
+OUTPUT STRUCTURE
+════════════════════════════════════════════════════════════════════════
+
+For each video, you get:
+
+📁 video_id/
+  ├── 📄 metadata.json       - Video info, chunk count, duration
+  ├── 📄 chunk_0000.json     - Chunk 0 with timestamps
+  ├── 📄 chunk_0000.txt      - Chunk 0 text only
+  ├── 📄 chunk_0001.json     - Chunk 1 with timestamps
+  ├── 📄 chunk_0001.txt      - Chunk 1 text only
+  └── ...
+
+metadata.json example:
+{
+  "video_id": "nAkV9oOZaz0",
+  "url": "https://www.youtube.com/watch?v=nAkV9oOZaz0",
+  "total_chunks": 12,
+  "chunk_mode": "fixed",
+  "total_duration": 357.8,
+  "total_segments": 245
+}
+
+chunk_0000.json example:
+{
+  "chunk_id": 0,
+  "start": 0.0,
+  "end": 30.5,
+  "text": "আসসালামু আলাইকুম আজকের ভিডিওতে...",
+  "segments": 15
+}
+
+════════════════════════════════════════════════════════════════════════
+CHUNKING MODE RECOMMENDATIONS
+════════════════════════════════════════════════════════════════════════
+
+📋 FOR DIFFERENT USE CASES:
+
+Use Case: Speech Recognition Training
+├─ Mode: "fixed" with 10-30 second chunks
+├─ Why: Uniform length helps batch processing
+└─ Config: CHUNK_DURATION = 20
+
+Use Case: VAD Alignment
+├─ Mode: "custom" with your VAD time ranges
+├─ Why: Aligns exactly with detected speech
+└─ Config: Provide CUSTOM_CHUNKS dictionary
+
+Use Case: Language Model Training
+├─ Mode: "sentences" or "fixed" 30-60s
+├─ Why: Natural sentence boundaries or context windows
+└─ Config: CHUNK_DURATION = 45
+
+Use Case: Dataset Analysis
+├─ Mode: "full"
+├─ Why: Easy to read and analyze complete content
+└─ Config: Just use full mode
+
+Use Case: Subtitling/Translation
+├─ Mode: "sentences"
+├─ Why: Keeps original subtitle timing intact
+└─ Config: Use sentences mode
+
+════════════════════════════════════════════════════════════════════════
+TIME ESTIMATES
+════════════════════════════════════════════════════════════════════════
+
+Per 50-video batch:
+- Download time: 30-45 minutes
+- File creation: Depends on chunk mode
+  • full: 50 files (1 per video)
+  • fixed (30s): ~1000-2000 files
+  • sentences: ~10,000-25,000 files
+
+All 275 videos in parallel (6 platforms): 1-2 hours
+All 275 videos sequential: 3-4 hours spread over 2 days
+
+Storage estimate:
+- JSON files: ~50-200 MB
+- Text files: ~20-100 MB
+- Total: ~100-300 MB for all 275 videos
+
+════════════════════════════════════════════════════════════════════════
+CUSTOM MODE: USING VAD OUTPUT
+════════════════════════════════════════════════════════════════════════
+
+If you have VAD (Voice Activity Detection) output:
+
+1. Format your VAD output as:
+   
+   {
+     "video_id_1": [(0, 10), (15, 25), (30, 45)],
+     "video_id_2": [(0, 20), (25, 40)],
+     ...
+   }
+
+2. Save as vad_chunks.json
+
+3. Load in script:
+   
+   import json
+   with open('vad_chunks.json') as f:
+       CUSTOM_CHUNKS = json.load(f)
+
+4. Set CHUNK_MODE = "custom"
+
+This extracts ONLY the spoken segments!
+
+════════════════════════════════════════════════════════════════════════
+RATE LIMIT SAFETY
+════════════════════════════════════════════════════════════════════════
+
+The downloader has built-in protection:
+✅ 2-4 second delays between videos
+✅ Progress saved every 5 videos
+✅ Auto-resume on restart (RESUME=True)
+✅ Detects rate limits and stops gracefully
+
+If rate limited:
+1. Wait 1-2 hours
+2. Re-run same script (it resumes automatically)
+3. Or switch to different platform for that batch
+
+════════════════════════════════════════════════════════════════════════
+ALTERNATIVE: SEQUENTIAL STRATEGY
+════════════════════════════════════════════════════════════════════════
+
+Can't run 6 platforms at once? Do it over 2-3 days:
+
+Day 1 AM:  Kaggle    → Batch 0 (50 videos)
+     PM:  Colab     → Batch 1 (50 videos)
+Day 2 AM:  GitHub   → Batch 2 (50 videos)
+     PM:  Kaggle    → Batch 3 (50 videos)
+Day 3 AM:  Colab    → Batch 4 (50 videos)
+     PM:  Any       → Batch 5 (25 videos)
+
+Total: ~6-8 hours of active work spread over 3 days
+
+════════════════════════════════════════════════════════════════════════

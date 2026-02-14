@@ -1,0 +1,203 @@
+
+════════════════════════════════════════════════════════════════════════
+CHUNK-WISE DOWNLOAD VISUAL WORKFLOW
+════════════════════════════════════════════════════════════════════════
+
+
+        YOUR 275 BANGLA VIDEOS
+        (videos_with_bangla.csv)
+                 │
+                 ▼
+        ┌────────────────────┐
+        │ prepare_bangla_    │
+        │    batches.py      │
+        └────────────────────┘
+                 │
+    ┌────────────┼────────────┐
+    │            │            │
+    ▼            ▼            ▼
+bangla_batch  bangla_batch  bangla_batch
+  _0.csv        _1.csv        _2.csv
+ (50 videos)   (50 videos)   (50 videos)
+    │            │            │
+    │   Choose CHUNK_MODE:   │
+    │   • full (1 chunk)     │
+    │   • fixed (30s chunks) │
+    │   • sentences (many)   │
+    │   • custom (VAD)       │
+    │            │            │
+    ▼            ▼            ▼
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│ KAGGLE  │  │  COLAB  │  │ GITHUB  │
+│ (Ntbk 1)│  │ (Acc 1) │  │CODESPACE│
+└─────────┘  └─────────┘  └─────────┘
+    │            │            │
+    │   chunk_downloader.py  │
+    │            │            │
+    ▼            ▼            ▼
+batch_0_    batch_1_    batch_2_
+transcripts transcripts transcripts
+    │            │            │
+    ▼            ▼            ▼
+bangla_batch  bangla_batch  bangla_batch
+  _3.csv        _4.csv        _5.csv
+ (50 videos)   (50 videos)   (25 videos)
+    │            │            │
+    ▼            ▼            ▼
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│  COLAB  │  │ KAGGLE  │  │   ANY   │
+│ (Acc 2) │  │ (Ntbk 2)│  │PLATFORM │
+└─────────┘  └─────────┘  └─────────┘
+    │            │            │
+    ▼            ▼            ▼
+batch_3_    batch_4_    batch_5_
+transcripts transcripts transcripts
+    │            │            │
+    └────────────┼────────────┘
+                 │
+                 ▼
+        ┌────────────────────┐
+        │  merge_transcript_ │
+        │    batches.py      │
+        └────────────────────┘
+                 │
+                 ▼
+    bangla_transcripts_merged/
+    ├── index.json
+    ├── VIDEO_ID_1/
+    │   ├── metadata.json
+    │   ├── chunk_0000.json
+    │   ├── chunk_0000.txt
+    │   ├── chunk_0001.json
+    │   ├── chunk_0001.txt
+    │   └── ...
+    ├── VIDEO_ID_2/
+    └── ...
+
+
+════════════════════════════════════════════════════════════════════════
+CHUNK MODE COMPARISON
+════════════════════════════════════════════════════════════════════════
+
+Example: 10-minute video (600 seconds)
+
+MODE: "full"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+├────────────────────────────────────────────────────────┤
+0s                    600s (entire transcript)           
+Output: 1 file
+
+
+MODE: "fixed" with 30s chunks
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+├──────┼──────┼──────┼──────┼──────┼──────┼──────┼───...
+0-30s  30-60s 60-90s 90-120s ...                  570-600s
+Output: 20 files (chunks)
+
+
+MODE: "sentences"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+├┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┤
+Each subtitle segment = 1 chunk (typically 2-5s each)
+Output: ~200-300 files
+
+
+MODE: "custom" with VAD [(0,45), (60,180), (200,450)]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+├──────────────┤   ├──────────────────────┤  ├─────────────...
+0-45s (speech)   60-180s (speech)        200-450s (speech)
+Output: 3 files (only spoken parts)
+
+
+════════════════════════════════════════════════════════════════════════
+FILE STRUCTURE PER VIDEO
+════════════════════════════════════════════════════════════════════════
+
+VIDEO_ID/
+├── metadata.json               ← Video info
+│   └── {
+│         "video_id": "...",
+│         "total_chunks": 12,
+│         "chunk_mode": "fixed",
+│         "total_duration": 357.8
+│       }
+│
+├── chunk_0000.json            ← Chunk with timestamps
+│   └── {
+│         "chunk_id": 0,
+│         "start": 0.0,
+│         "end": 30.5,
+│         "text": "আসসালামু...",
+│         "segments": 15
+│       }
+│
+├── chunk_0000.txt             ← Plain text
+│   └── আসসালামু আলাইকুম...
+│
+├── chunk_0001.json
+├── chunk_0001.txt
+└── ...
+
+
+════════════════════════════════════════════════════════════════════════
+PARALLEL VS SEQUENTIAL
+════════════════════════════════════════════════════════════════════════
+
+PARALLEL (6 platforms simultaneously):
+┌────────────────────────────────────────────────────────┐
+│ Platform 1: ████████████████████ (50 videos, 45 min)  │
+│ Platform 2: ████████████████████ (50 videos, 45 min)  │
+│ Platform 3: ████████████████████ (50 videos, 45 min)  │
+│ Platform 4: ████████████████████ (50 videos, 45 min)  │
+│ Platform 5: ████████████████████ (50 videos, 45 min)  │
+│ Platform 6: ██████████           (25 videos, 25 min)  │
+└────────────────────────────────────────────────────────┘
+Total time: ~45 minutes (limited by slowest batch)
+
+
+SEQUENTIAL (1 platform, batches over 2-3 days):
+┌────────────────────────────────────────────────────────┐
+│ Day 1 AM:  ████████████████████ Batch 0              │
+│            [2 hour break]                              │
+│ Day 1 PM:  ████████████████████ Batch 1              │
+│            [overnight]                                 │
+│ Day 2 AM:  ████████████████████ Batch 2              │
+│            [2 hour break]                              │
+│ Day 2 PM:  ████████████████████ Batch 3              │
+│            [overnight]                                 │
+│ Day 3 AM:  ████████████████████ Batch 4              │
+│            [2 hour break]                              │
+│ Day 3 PM:  ██████████           Batch 5              │
+└────────────────────────────────────────────────────────┘
+Total time: 3 days (6 sessions of ~45 min each)
+
+
+════════════════════════════════════════════════════════════════════════
+STORAGE REQUIREMENTS
+════════════════════════════════════════════════════════════════════════
+
+For 275 Bangla videos (assuming avg 5 min/video):
+
+MODE            FILES       SIZE        USE CASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+full            275         ~50 MB      General analysis
+fixed (30s)     ~5,000      ~150 MB     Training, ML
+fixed (10s)     ~15,000     ~200 MB     Fine-grained
+sentences       ~75,000     ~250 MB     Alignment
+custom (VAD)    ~2,000      ~100 MB     Speech only
+
+
+════════════════════════════════════════════════════════════════════════
+SUCCESS METRICS
+════════════════════════════════════════════════════════════════════════
+
+Expected Results for 275 Videos:
+
+✅ Successfully downloaded:    ~270-275 (98-100%)
+❌ Failed (rate limit/error):  ~0-5    (0-2%)
+📝 Total chunks (fixed 30s):   ~5,000-8,000
+⏱️  Total duration:             ~20-25 hours of Bangla content
+💾 Storage used:                ~100-300 MB
+
+
+════════════════════════════════════════════════════════════════════════
